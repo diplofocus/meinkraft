@@ -16,6 +16,7 @@ public static class VoxelData
     };
 
     public static readonly int[,] voxelTriangles = new int[6, 6] {
+        // TODO: Remove duplicate verts
         {0, 3, 1, 1, 3, 2}, // Back face
         {5, 6, 4, 4, 6, 7}, // Front face
         {3, 7, 2, 2, 7, 6}, // Top face

@@ -62,6 +62,7 @@ public class Chunk : MonoBehaviour
         {
             if (!CullVoxel(position + VoxelData.neighborLookups[face]))
             {
+                // TODO: Remove duplicate verts, add triangles manually (ie, unfold the for loop)
                 for (int vert = 0; vert < nVerts; vert++)
                 {
                     int triangleIndex = VoxelData.voxelTriangles[face, vert];
