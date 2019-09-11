@@ -158,4 +158,9 @@ public class ChunkCoord {
         x = _x;
         z = _z;
     }
+
+    public bool Equals(ChunkCoord other) {
+        if (other == null) return false;
+        return x == other.x && z == other.z;
+    }
 }
