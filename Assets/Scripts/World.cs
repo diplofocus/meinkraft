@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class World : MonoBehaviour {
+    public BiomeAttributes biome;
     public int seed = 1337;
     public Transform player;
     public Vector3 spawnPosition;
-    public static readonly int WorldSizeInChunks = 100;
+    public static readonly int WorldSizeInChunks = 10;
     public Material material;
     public BlockType[] blockTypes;
     public static readonly int ViewDistanceInChunks = 5;
@@ -27,11 +28,11 @@ public class World : MonoBehaviour {
     }
 
     private void Update() {
-        ChunkCoord currentChunkLocation = GetChunkCoordFromVec3(player.position);
-        if (!currentChunkLocation.Equals(playerLastCoords)) {
-            CheckViewDistance();
-            playerLastCoords = currentChunkLocation;
-        }
+        // ChunkCoord currentChunkLocation = GetChunkCoordFromVec3(player.position);
+        // if (!currentChunkLocation.Equals(playerLastCoords)) {
+        //     CheckViewDistance();
+        //     playerLastCoords = currentChunkLocation;
+        // }
     }
 
     void GenerateWorld() {
@@ -99,22 +100,72 @@ public class World : MonoBehaviour {
         return x >= 0 && x < WorldSizeInVoxels && y >= 0 && y < Chunk.ChunkHeight && z >= 0 && z < WorldSizeInVoxels;
     }
 
+    public bool CheckForBlock(float _x, float _y, float _z) {
+        int x = Mathf.FloorToInt(_x);
+        int y = Mathf.FloorToInt(_y);
+        int z = Mathf.FloorToInt(_z);
+
+        int xChunk = x / Chunk.ChunkWidth;
+        int zChunk = z / Chunk.ChunkWidth;
+
+        x -= xChunk * Chunk.ChunkWidth;
+        z -= zChunk * Chunk.ChunkWidth;
+
+        return blockTypes[chunks[xChunk, zChunk].voxelMap[x, y, z]].isSolid;
+    }
+
     public byte GetVoxel (Vector3 pos) {
+        /* 0: Air,
+           1: Bedrock,
+           2: Stone,
+           3: Grass,
+           4: Furnace,
+           5: Sand 
+           6: Dirt */
+        int yPos = Mathf.FloorToInt(pos.y);
+        /* Immutable pass */
+
+        // Outside world - air
         if (!IsVoxelInWorld(pos)) 
             return 0;
- 
-        if (pos.y == 0) {
+
+        // Bottom - bedrock
+        if (yPos == 0)
             return 1;
-        } else if (pos.y == Chunk.ChunkHeight - 1) {
-            float tempNoise = Noise.Get2DPerlin(new Vector2(pos.x, pos.z), 0, 0.1f);
-            if (tempNoise < 0.5f) {
-                return 3;
-            } else {
-                return 5;
+
+        /* Basic terrain pass */
+        int terrainHeight = Mathf.FloorToInt(
+            biome.terrainHeight * Noise.Get2DPerlin(pos, 0, biome.terrainScale)) + biome.solidGroundHeight;
+
+        byte voxelValue = 0;
+
+        // Grass on top layer
+        if (yPos == terrainHeight)
+            voxelValue = 3;
+        // Dirt in layers below topmost layer
+        else if (yPos < terrainHeight && yPos > terrainHeight - 1 - Random.Range(2, 6))
+            voxelValue = 6;
+        // Air above terrain level
+        else if (yPos > terrainHeight)
+            return 0;
+        // Stone elsewhere
+        else
+            voxelValue = 2;
+
+        /* Second pass */
+        if (voxelValue == 2) {
+            foreach(Lode lode in biome.lodes) {
+                if (
+                    yPos > lode.minHeight
+                    && yPos < lode.maxHeight
+                    && Noise.Get3DPerlin(pos, lode.noiseOffset, lode.scale, lode.threshold)) {
+                    voxelValue = lode.blockID;
+                }
             }
-        } else {
-            return 2;
         }
+
+        return voxelValue;
+ 
     }
 }
 

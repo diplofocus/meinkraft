@@ -10,7 +10,7 @@ public class Chunk {
     MeshFilter meshFilter;
 
     public static readonly int ChunkWidth = 16;
-    public static readonly int ChunkHeight = 16;
+    public static readonly int ChunkHeight = 128;
 
 
     static int nFaces = 6; // Number of faces
@@ -21,7 +21,7 @@ public class Chunk {
 
     World world;
 
-    byte[,,] voxelMap = new byte[ChunkWidth, ChunkHeight, ChunkWidth];
+    public byte[,,] voxelMap = new byte[ChunkWidth, ChunkHeight, ChunkWidth];
     private int vertexIndex = 0;
 
 
@@ -49,7 +49,9 @@ public class Chunk {
             {
                 for (int z = 0; z < ChunkWidth; z++)
                 {
-                    AddVoxelDataToChunk(new Vector3(x, y, z));
+                    if (world.blockTypes[voxelMap[x, y, z]].isSolid) {
+                        AddVoxelDataToChunk(new Vector3(x, y, z));
+                    }
                 }
             }
         }
