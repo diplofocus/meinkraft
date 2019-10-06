@@ -2,14 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Player : MonoBehaviour {
+public class Player : MonoBehaviour
+{
     public bool isGrounded;
     public bool isSprinting;
-    public float maxSpeed = 3;
+    public float walkSpeed = 3;
     public float sprintSpeed = 9;
     public float jumpForce = 5;
 
     public float playerWidth = 0.15f;
+    public float playerHeight = 1.8f;
     private float verticalMomentum = 0;
     private bool jumpRequest;
     public float gravity = -9.807f;
@@ -21,55 +23,153 @@ public class Player : MonoBehaviour {
     private float mouseVertical;
     private Vector3 velocity;
 
-    private void Start() {
+    private void Start()
+    {
         cam = GameObject.Find("Main Camera").transform;
         world = GameObject.Find("World").GetComponent<World>();
     }
-    private void Update() {
-        GetPlayerInputs();
 
-        velocity = ((transform.forward * vertical) + (transform.right * horizontal)) * Time.deltaTime * maxSpeed;
-        // velocity += Vector3.up * gravity * Time.deltaTime;
+    private void FixedUpdate()
+    {
+        CalculateVelocity();
 
-        // velocity.y = CheckDownSpeed(velocity.y);
+        if (jumpRequest)
+            Jump();
 
         transform.Rotate(Vector3.up * mouseHorizontal);
         cam.Rotate(Vector3.right * -mouseVertical);
         transform.Translate(velocity, Space.World);
+
+    }
+    private void Update()
+    {
+        GetPlayerInputs();
     }
 
-    private void GetPlayerInputs() {
+    void Jump()
+    {
+        verticalMomentum = jumpForce;
+        isGrounded = false;
+        jumpRequest = false;
+    }
+
+    private void CalculateVelocity()
+    {
+        // Apply gravity
+        if (verticalMomentum > gravity)
+            verticalMomentum += Time.fixedDeltaTime * gravity;
+
+        Vector3 baseVel = velocity = ((transform.forward * vertical) + transform.right * horizontal) * Time.fixedDeltaTime;
+        velocity = baseVel * (isSprinting ? sprintSpeed : walkSpeed);
+
+        velocity += Vector3.up * verticalMomentum * Time.fixedDeltaTime;
+
+        if ((velocity.z > 0 && front) || (velocity.z < 0 && back))
+            velocity.z = 0;
+
+        if ((velocity.x > 0 && right) || (velocity.x < 0 && left))
+            velocity.x = 0;
+
+        if (velocity.y < 0)
+            velocity.y = CheckDownSpeed(velocity.y);
+        else if (velocity.y > 0)
+            velocity.y = CheckUpSpeed(velocity.y);
+
+    }
+
+    private void GetPlayerInputs()
+    {
         horizontal = Input.GetAxis("Horizontal");
         vertical = Input.GetAxis("Vertical");
 
         mouseHorizontal = Input.GetAxis("Mouse X");
         mouseVertical = Input.GetAxis("Mouse Y");
 
-        if (Input.GetButtonDown("Sprint")) {
+        if (Input.GetButtonDown("Sprint"))
+        {
             isSprinting = true;
         }
 
-        if (Input.GetButtonUp("Sprint")) {
+        if (Input.GetButtonUp("Sprint"))
+        {
             isSprinting = false;
         }
 
-        if (isGrounded && Input.GetButtonDown("Jump")) {
+        if (isGrounded && Input.GetButtonDown("Jump"))
+        {
             jumpRequest = true;
         }
     }
 
-    private float CheckDownSpeed(float downSpeed) {
+    private float CheckDownSpeed(float downSpeed)
+    {
         if (
-            world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + downSpeed, transform.position.z + playerWidth) ||
+            world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + downSpeed, transform.position.z - playerWidth) ||
             world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + downSpeed, transform.position.z - playerWidth) ||
-            world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + downSpeed, transform.position.z + playerWidth) ||
-            world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + downSpeed, transform.position.z - playerWidth) 
-        ) {
+            world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + downSpeed, transform.position.z + playerWidth) ||
+            world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + downSpeed, transform.position.z + playerWidth)
+        )
+        {
             isGrounded = true;
             return 0;
-        } else {
+        }
+        else
+        {
             isGrounded = false;
             return downSpeed;
+        }
+    }
+
+    private float CheckUpSpeed(float upSpeed)
+    {
+        if (
+            world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + 2f + upSpeed, transform.position.z - playerWidth) ||
+            world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + 2f + upSpeed, transform.position.z - playerWidth) ||
+            world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + 2f + upSpeed, transform.position.z + playerWidth) ||
+            world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + 2f + upSpeed, transform.position.z + playerWidth)
+        )
+        {
+            return 0;
+        }
+        else
+        {
+            return upSpeed;
+        }
+    }
+
+    public bool front
+    {
+        get
+        {
+            return world.CheckForBlock(transform.position.x, transform.position.y, transform.position.z + playerWidth)
+            || world.CheckForBlock(transform.position.x, transform.position.y + 1f, transform.position.z + playerWidth);
+        }
+    }
+
+    public bool back
+    {
+        get
+        {
+            return world.CheckForBlock(transform.position.x, transform.position.y, transform.position.z - playerWidth)
+            || world.CheckForBlock(transform.position.x, transform.position.y + 1f, transform.position.z - playerWidth);
+        }
+    }
+
+    public bool left
+    {
+        get
+        {
+            return world.CheckForBlock(transform.position.x - playerWidth, transform.position.y, transform.position.z)
+            || world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + 1f, transform.position.z);
+        }
+    }
+
+    public bool right
+    {
+        get
+        {
+            return world.CheckForBlock(transform.position.x + playerWidth, transform.position.y, transform.position.z + playerWidth)
+            || world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + 1f, transform.position.z + playerWidth);
         }
     }
 }
