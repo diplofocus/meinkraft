@@ -103,11 +103,15 @@ public class Player : MonoBehaviour
 
     private float CheckDownSpeed(float downSpeed)
     {
+        Vector3 lb = new Vector3(-playerWidth, downSpeed, -playerWidth);
+        Vector3 lf = new Vector3(-playerWidth, downSpeed, playerWidth);
+        Vector3 rb = new Vector3(playerWidth, downSpeed, -playerWidth);
+        Vector3 rf = new Vector3(playerWidth, downSpeed, playerWidth);
         if (
-            world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + downSpeed, transform.position.z - playerWidth) ||
-            world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + downSpeed, transform.position.z - playerWidth) ||
-            world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + downSpeed, transform.position.z + playerWidth) ||
-            world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + downSpeed, transform.position.z + playerWidth)
+            world.CheckForBlock(transform.position + lb) ||
+            world.CheckForBlock(transform.position + lf) ||
+            world.CheckForBlock(transform.position + rb) ||
+            world.CheckForBlock(transform.position + rf)
         )
         {
             isGrounded = true;
@@ -122,11 +126,15 @@ public class Player : MonoBehaviour
 
     private float CheckUpSpeed(float upSpeed)
     {
+        Vector3 lb = new Vector3(-playerWidth, 2f + upSpeed, -playerWidth);
+        Vector3 lf = new Vector3(-playerWidth, 2f + upSpeed, playerWidth);
+        Vector3 rb = new Vector3(playerWidth, 2f + upSpeed, -playerWidth);
+        Vector3 rf = new Vector3(playerWidth, 2f + upSpeed, playerWidth);
         if (
-            world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + 2f + upSpeed, transform.position.z - playerWidth) ||
-            world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + 2f + upSpeed, transform.position.z - playerWidth) ||
-            world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + 2f + upSpeed, transform.position.z + playerWidth) ||
-            world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + 2f + upSpeed, transform.position.z + playerWidth)
+            world.CheckForBlock(transform.position + lb) ||
+            world.CheckForBlock(transform.position + lf) ||
+            world.CheckForBlock(transform.position + rb) ||
+            world.CheckForBlock(transform.position + rf)
         )
         {
             return 0;
@@ -141,8 +149,8 @@ public class Player : MonoBehaviour
     {
         get
         {
-            return world.CheckForBlock(transform.position.x, transform.position.y, transform.position.z + playerWidth)
-            || world.CheckForBlock(transform.position.x, transform.position.y + 1f, transform.position.z + playerWidth);
+            return world.CheckForBlock(transform.position + new Vector3(0f, 0f, playerWidth))
+            || world.CheckForBlock(transform.position + new Vector3(0f, 1f, playerWidth));
         }
     }
 
@@ -150,8 +158,8 @@ public class Player : MonoBehaviour
     {
         get
         {
-            return world.CheckForBlock(transform.position.x, transform.position.y, transform.position.z - playerWidth)
-            || world.CheckForBlock(transform.position.x, transform.position.y + 1f, transform.position.z - playerWidth);
+            return world.CheckForBlock(transform.position + new Vector3(0f, 0f, -playerWidth))
+            || world.CheckForBlock(transform.position + new Vector3(0f, 1f, -playerWidth));
         }
     }
 
@@ -159,8 +167,8 @@ public class Player : MonoBehaviour
     {
         get
         {
-            return world.CheckForBlock(transform.position.x - playerWidth, transform.position.y, transform.position.z)
-            || world.CheckForBlock(transform.position.x - playerWidth, transform.position.y + 1f, transform.position.z);
+            return world.CheckForBlock(transform.position + new Vector3(-playerWidth, 0f, 0f))
+            || world.CheckForBlock(transform.position + new Vector3(-playerWidth, 1f, 0f));
         }
     }
 
@@ -168,8 +176,8 @@ public class Player : MonoBehaviour
     {
         get
         {
-            return world.CheckForBlock(transform.position.x + playerWidth, transform.position.y, transform.position.z + playerWidth)
-            || world.CheckForBlock(transform.position.x + playerWidth, transform.position.y + 1f, transform.position.z + playerWidth);
+            return world.CheckForBlock(transform.position + new Vector3(playerWidth, 0f, 0f))
+            || world.CheckForBlock(transform.position + new Vector3(playerWidth, 1f, 0f));
         }
     }
 }

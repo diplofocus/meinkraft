@@ -12,9 +12,11 @@ public class World : MonoBehaviour
     public Material material;
     public BlockType[] blockTypes;
     public static readonly int ViewDistanceInChunks = 5;
+
+    public GameObject debugScreen;
     List<ChunkCoord> activeChunks = new List<ChunkCoord>();
 
-    ChunkCoord playerChunkCoord;
+    public ChunkCoord playerChunkCoord;
     ChunkCoord playerLastChunkCoord;
 
     public static int WorldSizeInVoxels
@@ -23,6 +25,8 @@ public class World : MonoBehaviour
     }
 
     Chunk[,] chunks = new Chunk[WorldSizeInChunks, WorldSizeInChunks];
+
+    List<ChunkCoord> chunksToCreate = new List<ChunkCoord>();
 
     private void Start()
     {
@@ -38,6 +42,12 @@ public class World : MonoBehaviour
 
         if (!playerChunkCoord.Equals(playerLastChunkCoord))
             CheckViewDistance();
+
+        if (chunksToCreate.Count > 0 && !isCreatingChunks)
+            StartCoroutine("CreateChunks");
+
+        if (Input.GetKeyDown(KeyCode.F3))
+            debugScreen.SetActive(!debugScreen.activeSelf);
     }
 
     void GenerateWorld()
@@ -47,19 +57,26 @@ public class World : MonoBehaviour
         {
             for (int z = center - ViewDistanceInChunks; z < center + ViewDistanceInChunks; z++)
             {
-                CreateNewChunk(x, z);
+                chunks[x, z] = new Chunk(new ChunkCoord(x, z), this, true);
+                activeChunks.Add(new ChunkCoord(x, z));
             }
         }
 
         player.position = spawnPosition;
     }
 
-    void CreateNewChunk(int x, int z)
+    private bool isCreatingChunks = false;
+    IEnumerator CreateChunks()
     {
-        ChunkCoord coords = new ChunkCoord(x, z);
-        Chunk newChunk = new Chunk(coords, this);
-        activeChunks.Add(coords);
-        chunks[x, z] = newChunk;
+        isCreatingChunks = true;
+        while (chunksToCreate.Count > 0)
+        {
+            chunks[chunksToCreate[0].x, chunksToCreate[0].z].Init();
+            chunksToCreate.RemoveAt(0);
+            yield return null;
+        }
+
+        isCreatingChunks = false;
     }
 
     ChunkCoord GetChunkCoordFromVec3(Vector3 pos)
@@ -85,13 +102,14 @@ public class World : MonoBehaviour
                 {
                     if (chunks[x, z] == null)
                     {
-                        CreateNewChunk(x, z);
+                        chunks[x, z] = new Chunk(new ChunkCoord(x, z), this, false);
+                        chunksToCreate.Add(new ChunkCoord(x, z));
                     }
                     else if (!chunks[x, z].isActive)
                     {
                         chunks[x, z].isActive = true;
-                        activeChunks.Add(new ChunkCoord(x, z));
                     }
+                    activeChunks.Add(new ChunkCoord(x, z));
                 }
                 for (int i = 0; i < previouslyActiveChunks.Count; i++)
                 {
@@ -122,19 +140,18 @@ public class World : MonoBehaviour
         return x >= 0 && x < WorldSizeInVoxels && y >= 0 && y < Chunk.ChunkHeight && z >= 0 && z < WorldSizeInVoxels;
     }
 
-    public bool CheckForBlock(float _x, float _y, float _z)
+    public bool CheckForBlock(Vector3 pos)
     {
-        int x = Mathf.FloorToInt(_x);
-        int y = Mathf.FloorToInt(_y);
-        int z = Mathf.FloorToInt(_z);
+        ChunkCoord thisChunk = new ChunkCoord(pos);
 
-        int xChunk = x / Chunk.ChunkWidth;
-        int zChunk = z / Chunk.ChunkWidth;
+        if (!IsChunkInWorld(thisChunk) || pos.y < 0 || pos.y > Chunk.ChunkHeight)
+            return false;
 
-        x -= xChunk * Chunk.ChunkWidth;
-        z -= zChunk * Chunk.ChunkWidth;
+        if (chunks[thisChunk.x, thisChunk.z] != null && chunks[thisChunk.x, thisChunk.z].isVoxelMapPopulated)
+            return blockTypes[chunks[thisChunk.x, thisChunk.z].GetVoxelFromGlobalVector3(pos)].isSolid;
 
-        return blockTypes[chunks[xChunk, zChunk].voxelMap[x, y, z]].isSolid;
+        return blockTypes[GetVoxel(pos)].isSolid;
+
     }
 
     public byte GetVoxel(Vector3 pos)
