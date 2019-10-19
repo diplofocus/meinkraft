@@ -16,7 +16,7 @@ public class World : MonoBehaviour
     public GameObject debugScreen;
     List<ChunkCoord> activeChunks = new List<ChunkCoord>();
 
-    public ChunkCoord playerChunkCoord;
+    public ChunkCoord playerChunkCoord = new ChunkCoord();
     ChunkCoord playerLastChunkCoord;
 
     public static int WorldSizeInVoxels
@@ -85,6 +85,14 @@ public class World : MonoBehaviour
         int z = Mathf.FloorToInt(pos.z / Chunk.ChunkWidth);
 
         return new ChunkCoord(x, z);
+    }
+
+    public Chunk GetChunkFromVector3(Vector3 pos)
+    {
+        int x = Mathf.FloorToInt(pos.x / Chunk.ChunkWidth);
+        int z = Mathf.FloorToInt(pos.z / Chunk.ChunkWidth);
+
+        return chunks[x, z];
     }
 
     void CheckViewDistance()

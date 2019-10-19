@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Player : MonoBehaviour
 {
@@ -23,10 +24,22 @@ public class Player : MonoBehaviour
     private float mouseVertical;
     private Vector3 velocity;
 
+    public Transform highlightBlockDestroy;
+    public Transform highlightBlockCreate;
+
+    public float checkIncrement = .1f;
+    public float reach = 8f;
+
+    public Text selectedBlockText;
+    public byte selectedBlockIndex = 1;
+
     private void Start()
     {
         cam = GameObject.Find("Main Camera").transform;
         world = GameObject.Find("World").GetComponent<World>();
+
+        Cursor.lockState = CursorLockMode.Locked;
+        selectedBlockText.text = world.blockTypes[selectedBlockIndex] + " block selected";
     }
 
     private void FixedUpdate()
@@ -44,6 +57,7 @@ public class Player : MonoBehaviour
     private void Update()
     {
         GetPlayerInputs();
+        PlaceCursorBlock();
     }
 
     void Jump()
@@ -99,6 +113,70 @@ public class Player : MonoBehaviour
         {
             jumpRequest = true;
         }
+
+        float scroll = Input.GetAxis("Mouse ScrollWheel");
+
+        if (scroll != 0)
+        {
+            if (scroll > 0)
+            {
+                selectedBlockIndex++;
+            }
+            else
+            {
+                selectedBlockIndex--;
+            }
+            if (selectedBlockIndex > (byte)(world.blockTypes.Length - 1))
+                selectedBlockIndex = 1;
+            if (selectedBlockIndex < 1)
+                selectedBlockIndex = (byte)(world.blockTypes.Length - 1);
+
+            selectedBlockText.text = world.blockTypes[selectedBlockIndex].blockName + " block selected";
+        }
+
+        if (highlightBlockDestroy.gameObject.activeSelf)
+        {
+            if (Input.GetMouseButtonDown(0))
+                world.GetChunkFromVector3(highlightBlockDestroy.position).EditVoxel(highlightBlockDestroy.position, 0);
+
+            if (Input.GetMouseButtonDown(1))
+                world.GetChunkFromVector3(highlightBlockCreate.position).EditVoxel(highlightBlockCreate.position, selectedBlockIndex);
+        }
+    }
+
+    private void PlaceCursorBlock()
+    {
+        float step = checkIncrement;
+        Vector3 lastPos = new Vector3();
+
+        while (step < reach)
+        {
+            Vector3 pos = cam.position + (cam.forward * step);
+            Vector3 newPos = new Vector3(
+                    Mathf.FloorToInt(pos.x),
+                    Mathf.FloorToInt(pos.y),
+                    Mathf.FloorToInt(pos.z)
+                );
+
+            if (world.CheckForBlock(pos))
+            {
+                highlightBlockDestroy.position = newPos;
+                highlightBlockCreate.position = lastPos;
+
+                highlightBlockDestroy.gameObject.SetActive(true);
+                highlightBlockCreate.gameObject.SetActive(true);
+
+                return;
+            }
+
+            lastPos = newPos;
+
+            step += checkIncrement;
+        }
+
+        highlightBlockDestroy.gameObject.SetActive(false);
+        highlightBlockCreate.gameObject.SetActive(false);
+
     }
 
     private float CheckDownSpeed(float downSpeed)
